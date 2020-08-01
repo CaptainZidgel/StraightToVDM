@@ -115,4 +115,3 @@ def Create(dir, START_MARGIN=500, END_MARGIN=0, SKIP_MARGIN=1):
 				vdm.commit(a)
 			vdm.write()
 
-Create("demos")

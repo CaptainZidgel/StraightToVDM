@@ -1,3 +1,4 @@
+dist/
 demos/
 __pycache__/
 *.vdm
