@@ -14,7 +14,7 @@ def getNumVal(message, default):
 		return default
 
 help = """
-	Welcome to STRAIGHT-TO-VDM, a BLOCKBUSTER program to
+	Welcome to STRAIGHT-TO-VDM, a program to
 	create VDM files for all demos in a single directory.
 	STRAIGHT-TO-VDM currently supports bookmarks created by:
 		* In game demo support | SAVED AS: <demo_name>.json
@@ -32,7 +32,10 @@ else:
 	startm = getNumVal("How many ticks before a bookmark do you wish to start your recording? (Default 500)\n>", 500) 
 	endm = getNumVal("How many ticks after a bookmark do you wish to end your recording? (Default 0: End on bookmark)\n>", 0)
 	skipm = getNumVal("(Advanced) How many ticks before recording starts do you wish to stop fast-forwarding? (Default 1)\n>", 1)
-	vdm.Create(src, startm, endm, skipm)
+	onlybmarks = input(" (Advanced) Skip automatically generated Killstreak bookmarks and only process manually made bookmarks? y/n\n>")
+	if onlybmarks.lower() == "y":
+		vdm.EventFilter = vdm.IsBookmark
+	vdm.ProcessAll(src, startm, endm, skipm)
 	print("Finished.")
 
 _ = input("Press any key to exit.")
