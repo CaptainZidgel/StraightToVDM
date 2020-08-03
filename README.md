@@ -26,10 +26,11 @@ A Directory filter will filter .json files, an EventFilter will filter events IN
 
 ##### OK BUT HOW DO I ACTUALLY USE IT?
 
-In essence, you must create a Directory object of files, loop on each of those files, creating an EventList object to loop through events.
-
+In essence, you must create a Directory object of files, loop on each of those files, creating an EventList object to loop through events.  
+Type is either ds (in-game demo support) or prec (PREC)  
+Path is either path to your jsons (ds) or path to your killstreaks.txt (prec)  
 ```python
-d = vdm.Directory(path, filter_func)
+d = vdm.Directory(path, filter_func, Type="prec")
 ```
 If you use EventFilters, you must first now `vdm.EventFilter` to your func, and then call   `Directory.filter(vdm.PassesEventFilter)`  
 This is required to make sure you do not filter all the events out of a json, leaving the loop with no events to process (which is bad). 
@@ -38,17 +39,17 @@ d = vdm.Directory(path, filter_func)
 vdm.EventFilter = my_event_filter_func
 d.filter(vdm.PassesEventFilter)
 ```
-
-[ You can also call `d.filter(your_func)` to filter your directory as many times as you like before moving on. ]
+[ You can also call `d.filter(your_func)` to filter your directory as many times as you like before moving on. ]  
+[ PREC Directory objects currently do not support JSON filtering because, you know. they're not really jsons. its one big txt file. ]
 ```python
 for file_index, file_path in d:
-	L = vdm.EventList(file_path, d[file_index+1], filter_func)
+	L = vdm.EventList(file_path, d, filter_func)
 ```
 	
-[ file_path and file_index+1 must be passed exactly like that, as vdms usefulness relies on information from other files. filter is optional. ]
+[ file_path and d must be passed exactly like that, information from d is essential for vdm creation. filter is optional. ]
 ```python
 for file_index, file_path in d:
-	L = vdm.EventList(file_path, d[file_index+1], filter_func)
+	L = vdm.EventList(file_path, d, filter_func)
 	for eventIndex, event in L:
 		vdm.RecordEvent(event, eventIndex, L, START_MARGIN=500, END_MARGIN=0, SKIP_MARGIN=1)
 	L.write()

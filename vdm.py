@@ -1,5 +1,9 @@
 import os
 import json
+import re
+import datetime
+from collections import OrderedDict
+
 import vdf
 
 #Util###################################################################
@@ -76,7 +80,43 @@ class StopDemo(PlayCommands): #Ceases playing a demo - should be called after al
         super().__init__(stick)
         self.name = "stopdem"
         self.command = "stopdemo"
+#######################################################################
+prec = re.compile('\[(\d{4}\/\d{2}\/\d{2}\/ \d{2}:\d{2})\] (Kill Streak:\d|Player bookmark) \("(\w+)" at (\d+)\)')
 
+class PRECList:
+    def __init__(self, path):
+        self.events = OrderedDict()
+        self.pathhead = os.path.split(path)[0]
+        with open(path) as f:
+            for line in f:
+                self.ParseLine(line)
+
+    def ParseLine(self, line):
+        m = prec.match(line)
+        if m != None:
+            e_timestamp = m.group(1)
+            e_type = m.group(2)
+            e_name = "Bookmark" if e_type == "Player bookmark" else "Killstreak"
+            e_valu = "Bookmark" if e_type == "Player bookmark" else re.match("Kill Streak:(\d+)", e_name)
+            e_demo = os.path.join(self.pathhead, m.group(3) + ".dem")
+            e_tick = m.group(4) #note that because this is regex extracted from a string, tick is a string (Unlike in the Very Cool Lua where patterns extracted from strings assume reasonable typing)
+            e_time = datetime.datetime.strptime(e_timestamp, '%Y/%m/%d/ %H:%M')
+            if not e_demo in self.events:   #python sucks lol why can't d[k1][k2] just initialize k1
+                self.events[e_demo] = OrderedDict()
+            self.events[e_demo][e_tick] = OrderedDict(tick = int(e_tick), name = e_name, value = e_valu, time = e_time)
+
+    def FileList(self):
+        l = [key for key in self.events]
+        l.sort()
+        return l
+
+    def EventList(self, file):
+        l = [e for e in self.events[file].values()]
+        l.sort(key=lambda e: e['tick'])
+        return l
+        #I'm pretty sure events and ticks are already sorted.. but just to be sure
+        
+#########################################################################
 #Filters for jsons and events###########################################
 
 def AlwaysPass(x):
@@ -113,12 +153,19 @@ EventFilter = AlwaysPass
 JSONFilter = AlwaysPass
 ############################CLASSES
 class Directory:
-    def __init__(self, path, JSONFilter=AlwaysPass):
+    def __init__(self, path, JSONFilter=AlwaysPass, Type="ds"):
         self.i = -1
         self.path = path
-        self.data = searchdir(path, Prefix=True)
-        self.data = list(filter(JSONFilter, self.data))
-
+        self.type = Type
+        if self.type == "ds":
+            self.data = searchdir(path, Prefix=True)
+            self.data = list(filter(JSONFilter, self.data))
+        elif self.type == "prec":
+            self.path = os.path.abspath(self.path)
+            self.ks = PRECList(self.path)
+            self.data = self.ks.FileList()
+        else:
+            raise Exception("Type must be either 'ds' or 'prec'")    
         '''This explanation goes for __next__ in EventList, as well
         self.i starts as -1 so that I can iterate it to be the index before returning
         however, we can't iterate until we've checked this is a valid index so
@@ -129,7 +176,7 @@ class Directory:
         '''
     def __next__(self):
         if self.i == len(self.data)-1:
-                raise StopIteration
+            raise StopIteration
         self.i += 1
         return self.i, self.data[self.i]
 
@@ -139,9 +186,9 @@ class Directory:
 
     def __getitem__(self, key):
         try:
-                return self.data[key]
+            return self.data[key]
         except IndexError:
-                return None
+            return None
 
     def filter(self, func):
         if func.__name__ != "AlwaysPass":
@@ -151,16 +198,22 @@ class Directory:
             log("Pruning files for {}: {}, {} - {} = {}", self.path, func.__name__, prior, prior-now, now)
         
 class EventList:
-        def __init__(self, path, nf, Filter=None):
+        def __init__(self, path, dir, Filter=None):
                 self.path = path
                 self.i = -1
-                self.nextFile = nf
+                self.nextFile = dir[dir.i+1]
                 self.stack = []
-                self.vdm = vdf.VDF(self.path.replace(".json", ".vdm"))
-                with open(self.path) as f:
-                        self.events = json.loads(f.read())['events']
-                        self.filter(Filter or EventFilter)
-                        #self.events = list(filter(EventFilter, self.events))
+                self.type = dir.type
+                if self.type == "ds":
+                    self.vdm = vdf.VDF(self.path.replace(".json", ".vdm"))
+                    with open(self.path) as f:
+                            self.events = json.loads(f.read())['events']
+                elif self.type == "prec":
+                    self.vdm = vdf.VDF(self.path.replace(".dem", ".vdm"))
+                    self.events = dir.ks.EventList(self.path)
+                else:
+                    raise Exception("(EL) Type must be either 'ds' or 'prec'")
+                self.filter(Filter or EventFilter)
                 
         def __next__(self):
             if self.i == len(self.events)-1:
