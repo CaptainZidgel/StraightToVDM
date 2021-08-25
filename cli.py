@@ -32,28 +32,26 @@ elif support.lower()[0] == "i":
 else:
     print("Unknown option: {}. Please type prec or ig".format(support))
 print("Proceeding with {} support".format(support))
-print("Write the path to your {}. Ideally, an absolute path (begins with drive). Path must be within tf/ directory.".format("directory" if support == "ds" else "killstreaks.txt"))
+print("Write the path to your {}. Ideally, an absolute path (begins with drive). This is where VDMs will be saved.".format("directory" if support == "ds" else "killstreaks.txt"))
 src = input("> ")
-if "tf"+os.sep not in src:
-    print("BAD DIRECTORY - IS IT A CHILD OF TF ?")
+src = os.path.abspath(src)
+d = vdm.Directory(src, JSONFilter=vdm.HasEvents, Type=support)
+print("I am about to ask you to fill some parameters - each has a default and you can choose to enter nothing or a non-number value to use the default.")
+startm = getNumVal("1. How many ticks before a bookmark do you wish to start your recording? (Default 500)\n>", 500) 
+endm = getNumVal("2. How many ticks after a bookmark do you wish to end your recording? (Default 0: End on bookmark)\n>", 0)
+skipm = getNumVal("3. (Advanced) How many ticks before recording starts do you wish to stop fast-forwarding? (Default 1)\n>", 1)
+onlybmarks = input("4. (Advanced) Skip automatically generated Killstreak bookmarks and only process manually made bookmarks? y/n\n>")
+if onlybmarks.lower() == "y":
+    vdm.EventFilter = vdm.IsBookmark
+    d.filter(vdm.PassesEventFilter)
+    print("Proceeding by only processing manual bookmarks")
 else:
-    src = os.path.abspath(src)
-    d = vdm.Directory(src, JSONFilter=vdm.HasEvents, Type=support)
-    print("I am about to ask you to fill some parameters - each has a default and you can choose to enter nothing or a non-number value to use the default.")
-    startm = getNumVal("1. How many ticks before a bookmark do you wish to start your recording? (Default 500)\n>", 500) 
-    endm = getNumVal("2. How many ticks after a bookmark do you wish to end your recording? (Default 0: End on bookmark)\n>", 0)
-    skipm = getNumVal("3. (Advanced) How many ticks before recording starts do you wish to stop fast-forwarding? (Default 1)\n>", 1)
-    onlybmarks = input("4. (Advanced) Skip automatically generated Killstreak bookmarks and only process manually made bookmarks? y/n\n>")
-    if onlybmarks.lower() == "y":
-        vdm.EventFilter = vdm.IsBookmark
-        print("Proceeding by only processing manual bookmarks")
-    else:
-        print("Proceeding by processing all events")
-    for fI, file in d:
-            L = vdm.EventList(file, d)
-            for eI, event in L:
-                    vdm.RecordEvent(event, eI, L, START_MARGIN=startm, END_MARGIN=endm, SKIP_MARGIN=skipm)
-            L.write()
-    print("Finished.")
+    print("Proceeding by processing all events")
+for fI, file in d:
+        L = vdm.EventList(file, d)
+        for eI, event in L:
+                vdm.RecordEvent(event, eI, L, START_MARGIN=startm, END_MARGIN=endm, SKIP_MARGIN=skipm)
+        L.write()
+print("Finished.")
 
 _ = input("Press any key to exit.")

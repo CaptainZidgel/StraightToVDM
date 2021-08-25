@@ -3,7 +3,7 @@ import vdm
 vdm.dolog = True
 #I set the directory to search in and pass a file (you should probably always pass vdm.HasEvents, I don't know why I don't do it automatically.)
 #(If you want to filter after initalizing, call d.filter(func)
-d = vdm.Directory("tf/demos/ds", vdm.HasEvents, Type="ds")
+d = vdm.Directory("Z:\Steam\steamapps\common\Team Fortress 2\tf\demos\reco\eventful\batch_1", vdm.HasEvents, Type="ds")
 #I set the EventFilter I intend to use - This can be overwritten when you initialize an EventList, but if you intend to use a filter at all you must start here so that you can avoid "dead branches" in your VDMs.
 vdm.EventFilter = vdm.IsBookmark
 #I make sure each file that passed the file filter could also have events remaining after using the event filter (<IMPORTANT>) PassesEventFilter relies on vdm.EventFilter
